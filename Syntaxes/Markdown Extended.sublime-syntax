@@ -68,6 +68,93 @@ contexts:
         - include: block_raw
         - include: heading
         - include: separator
+    - include: highlighter
+    - match: '^[ ]{0,3}([*+-])(?=\s)'
+      captures:
+        1: punctuation.definition.list_item.markdown
+      push:
+        - meta_scope: markup.list.unnumbered.markdown
+        - match: ^(?=\S)
+          captures:
+            1: punctuation.definition.list_item.markdown
+          pop: true
+        - include: list-paragraph
+    - match: '^[ ]{0,3}([0-9]+)(\.)(?=\s)'
+      captures:
+        1: punctuation.definition.list_item.markdown punctuation.definition.list_item.number.markdown
+        2: punctuation.definition.list_item.markdown
+      push:
+        - meta_scope: markup.list.numbered.markdown
+        - match: ^(?=\S)
+          captures:
+            1: punctuation.definition.list_item.markdown punctuation.definition.list_item.number.markdown
+            2: punctuation.definition.list_item.markdown
+          pop: true
+        - include: list-paragraph
+    - match: '^(?=<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b)(?!.*?</\1>)'
+      comment: Markdown formatting is disabled inside block-level tags.
+      push:
+        - meta_scope: meta.disable-markdown
+        - match: (?<=^</\1>$\n)
+          pop: true
+        - include: scope:text.html.basic
+        - include: scope:text.html.handlebars
+    - match: '^(?=<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b)'
+      comment: Same rule but for one line disables.
+      push:
+        - meta_scope: meta.disable-markdown
+        - match: $\n?
+          pop: true
+        - include: scope:text.html.basic
+        - include: scope:text.html.handlebars
+    - match: |-
+        (?x:
+          \s*           # Leading whitespace
+          (\[)(.+?)(\])(:)    # Reference name
+          [ \t]*          # Optional whitespace
+          (<?)(\S+?)(>?)      # The url
+          [ \t]*          # Optional whitespace
+          (?:
+              ((\().+?(\)))   # Match title in quotes…
+            | ((").+?("))   # or in parens.
+          )?            # Title is optional
+          \s*           # Optional whitespace
+          $
+        )
+      scope: meta.link.reference.def.markdown
+      captures:
+        1: punctuation.definition.constant.markdown
+        2: constant.other.reference.link.markdown
+        3: punctuation.definition.constant.markdown
+        4: punctuation.separator.key-value.markdown
+        5: punctuation.definition.link.markdown
+        6: markup.underline.link.markdown
+        7: punctuation.definition.link.markdown
+        8: string.other.link.description.title.markdown
+        9: punctuation.definition.string.begin.markdown
+        10: punctuation.definition.string.end.markdown
+        11: string.other.link.description.title.markdown
+        12: punctuation.definition.string.begin.markdown
+        13: punctuation.definition.string.end.markdown
+    - match: '^(?=\S)(?![=-]{3,}(?=$))'
+      push:
+        - meta_scope: meta.paragraph.markdown
+        - include: html_comment
+        - include: commented
+        - match: '^(?:\s*$|(?=[ ]{,3}>.))|(?=[ \t]*\n)(?<=^===|^====|=====|^---|^----|-----)[ \t]*\n|(?=^#)'
+          pop: true
+        - include: inline
+        - include: scope:text.html.handlebars
+        - match: '^(={3,})(?=[ \t]*$)'
+          scope: markup.heading.1.markdown
+          captures:
+            1: punctuation.definition.heading.markdown
+        - match: '^(-{3,})(?=[ \t]*$)'
+          scope: markup.heading.2.markdown
+          captures:
+            1: punctuation.definition.heading.markdown
+
+  highlighter:
     - match: '(```|~~~|{%\s*highlight)\s*(c)\s*((?:linenos\s*)?%})?$'
       captures:
         1: punctuation.definition.fenced.markdown
@@ -717,89 +804,6 @@ contexts:
             2: variable.language.fenced.markdown
             3: punctuation.definition.fenced.markdown
           pop: true
-    - match: '^[ ]{0,3}([*+-])(?=\s)'
-      captures:
-        1: punctuation.definition.list_item.markdown
-      push:
-        - meta_scope: markup.list.unnumbered.markdown
-        - match: ^(?=\S)
-          captures:
-            1: punctuation.definition.list_item.markdown
-          pop: true
-        - include: list-paragraph
-    - match: '^[ ]{0,3}([0-9]+)(\.)(?=\s)'
-      captures:
-        1: punctuation.definition.list_item.markdown punctuation.definition.list_item.number.markdown
-        2: punctuation.definition.list_item.markdown
-      push:
-        - meta_scope: markup.list.numbered.markdown
-        - match: ^(?=\S)
-          captures:
-            1: punctuation.definition.list_item.markdown punctuation.definition.list_item.number.markdown
-            2: punctuation.definition.list_item.markdown
-          pop: true
-        - include: list-paragraph
-    - match: '^(?=<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b)(?!.*?</\1>)'
-      comment: Markdown formatting is disabled inside block-level tags.
-      push:
-        - meta_scope: meta.disable-markdown
-        - match: (?<=^</\1>$\n)
-          pop: true
-        - include: scope:text.html.basic
-        - include: scope:text.html.handlebars
-    - match: '^(?=<(p|div|h[1-6]|blockquote|pre|table|dl|ol|ul|script|noscript|form|fieldset|iframe|math|ins|del)\b)'
-      comment: Same rule but for one line disables.
-      push:
-        - meta_scope: meta.disable-markdown
-        - match: $\n?
-          pop: true
-        - include: scope:text.html.basic
-        - include: scope:text.html.handlebars
-    - match: |-
-        (?x:
-          \s*           # Leading whitespace
-          (\[)(.+?)(\])(:)    # Reference name
-          [ \t]*          # Optional whitespace
-          (<?)(\S+?)(>?)      # The url
-          [ \t]*          # Optional whitespace
-          (?:
-              ((\().+?(\)))   # Match title in quotes…
-            | ((").+?("))   # or in parens.
-          )?            # Title is optional
-          \s*           # Optional whitespace
-          $
-        )
-      scope: meta.link.reference.def.markdown
-      captures:
-        1: punctuation.definition.constant.markdown
-        2: constant.other.reference.link.markdown
-        3: punctuation.definition.constant.markdown
-        4: punctuation.separator.key-value.markdown
-        5: punctuation.definition.link.markdown
-        6: markup.underline.link.markdown
-        7: punctuation.definition.link.markdown
-        8: string.other.link.description.title.markdown
-        9: punctuation.definition.string.begin.markdown
-        10: punctuation.definition.string.end.markdown
-        11: string.other.link.description.title.markdown
-        12: punctuation.definition.string.begin.markdown
-        13: punctuation.definition.string.end.markdown
-    - match: '^(?=\S)(?![=-]{3,}(?=$))'
-      push:
-        - meta_scope: meta.paragraph.markdown
-        - include: html_comment
-        - match: '^(?:\s*$|(?=[ ]{,3}>.))|(?=[ \t]*\n)(?<=^===|^====|=====|^---|^----|-----)[ \t]*\n|(?=^#)'
-          pop: true
-        - include: inline
-        - include: scope:text.html.handlebars
-        - match: '^(={3,})(?=[ \t]*$)'
-          scope: markup.heading.1.markdown
-          captures:
-            1: punctuation.definition.heading.markdown
-        - match: '^(-{3,})(?=[ \t]*$)'
-          scope: markup.heading.2.markdown
-          captures:
-            1: punctuation.definition.heading.markdown
 
   html_comment:
     - match: <!--
@@ -811,6 +815,22 @@ contexts:
           pop: true
         - match: "--"
           scope: invalid.illegal.bad-comments-or-CDATA.html
+  commented:
+    - match: '\{%-?\s*comment\s*-?%\}'
+      push:
+        - meta_scope: commented
+        - match: ^\s*---\s*$
+          with_prototype:
+            - include: scope:source.yaml#prototype
+          push:
+            - meta_scope: markup.raw.yaml.front-matter
+            - meta_content_scope: source.yaml
+            - match: ^\s*---\s*
+              pop: true
+            - include: scope:source.yaml
+        - match: '\{%-?\s*endcomment\s*-?%\}'
+          pop: true
+        - include: highlighter
   ampersand:
     - match: "&(?!([a-zA-Z0-9]+|#[0-9]+|#x[0-9a-fA-F]+);)"
       comment: |
